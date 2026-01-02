@@ -240,9 +240,32 @@ header h1 {
     margin-bottom: 0.25rem;
 }
 
-.sources-content {
-    padding: 0 0.5rem 0.25rem 1.5rem;
+.sources-list {
+    padding: 0.25rem 0.5rem 0.25rem 2rem;
     color: var(--text-secondary);
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.8;
+}
+
+.sources-list li {
+    margin-bottom: 0.25rem;
+}
+
+.source-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.source-link:hover {
+    color: #60a5fa;
+    text-decoration: underline;
+}
+
+.source-link:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
 }
 
 /* Markdown formatting styles */

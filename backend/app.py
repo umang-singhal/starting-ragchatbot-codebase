@@ -1,4 +1,5 @@
 import warnings
+import logging
 warnings.filterwarnings("ignore", message="resource_tracker: There appear to be.*")
 
 from fastapi import FastAPI, HTTPException
@@ -6,11 +7,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import os
 
 from config import config
 from rag_system import RAGSystem
+
+# Configure logging
+logging.basicConfig(
+    level=getattr(logging, config.logging.level),
+    format=config.logging.format,
+    datefmt=config.logging.date_format
+)
+
+logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(title="Course Materials RAG System", root_path="")
@@ -43,7 +53,7 @@ class QueryRequest(BaseModel):
 class QueryResponse(BaseModel):
     """Response model for course queries"""
     answer: str
-    sources: List[str]
+    sources: List[Dict[str, Any]]  # Each source has 'name' and optional 'link'
     session_id: str
 
 class CourseStats(BaseModel):
@@ -56,51 +66,68 @@ class CourseStats(BaseModel):
 @app.post("/api/query", response_model=QueryResponse)
 async def query_documents(request: QueryRequest):
     """Process a query and return response with sources"""
+    logger.info("Received query: %s (session_id: %s)", request.query[:100], request.session_id)
     try:
         # Create session if not provided
         session_id = request.session_id
         if not session_id:
             session_id = rag_system.session_manager.create_session()
-        
+            logger.debug("Created new session: %s", session_id)
+
         # Process query using RAG system
         answer, sources = rag_system.query(request.query, session_id)
-        
+
+        logger.info("Query completed successfully (session_id: %s, sources: %d)", session_id, len(sources))
         return QueryResponse(
             answer=answer,
             sources=sources,
             session_id=session_id
         )
     except Exception as e:
+        logger.error("Error processing query: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/courses", response_model=CourseStats)
 async def get_course_stats():
     """Get course analytics and statistics"""
+    logger.debug("Fetching course statistics")
     try:
         analytics = rag_system.get_course_analytics()
+        logger.info("Returning course stats: %d courses", analytics["total_courses"])
         return CourseStats(
             total_courses=analytics["total_courses"],
             course_titles=analytics["course_titles"]
         )
     except Exception as e:
+        logger.error("Error fetching course stats: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.on_event("startup")
 async def startup_event():
     """Load initial documents on startup"""
+    # Test LLM connection first
+    logger.info("Testing LLM connection...")
+    success, message = rag_system.ai_generator.test_connection()
+    if success:
+        logger.info("LLM connection test: %s", message)
+    else:
+        logger.error("LLM connection test failed: %s", message)
+
+    # Load documents
     docs_path = "../docs"
+    logger.info("Loading initial documents from %s", docs_path)
     if os.path.exists(docs_path):
-        print("Loading initial documents...")
         try:
             courses, chunks = rag_system.add_course_folder(docs_path, clear_existing=False)
-            print(f"Loaded {courses} courses with {chunks} chunks")
+            logger.info("Successfully loaded %d courses with %d chunks", courses, chunks)
         except Exception as e:
-            print(f"Error loading documents: {e}")
+            logger.error("Error loading documents: %s", e, exc_info=True)
+    else:
+        logger.warning("Documents path does not exist: %s", docs_path)
 
 # Custom static file handler with no-cache headers for development
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-import os
 from pathlib import Path
 
 

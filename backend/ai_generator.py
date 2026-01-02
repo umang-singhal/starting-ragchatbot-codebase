@@ -29,19 +29,32 @@ All responses must be:
 Provide only the direct answer to what was asked.
 """
     
-    def __init__(self, api_key: str, model: str, base_url: str = ""):
-        client_kwargs = {"api_key": api_key}
-        if base_url:
-            client_kwargs["base_url"] = base_url
-        self.client = anthropic.Anthropic(**client_kwargs)
+    def __init__(self, api_key: str, model: str):
+        self.client = anthropic.Anthropic(api_key=api_key)
         self.model = model
-        
         # Pre-build base API parameters
         self.base_params = {
             "model": self.model,
             "temperature": 0,
             "max_tokens": 800
         }
+
+    def test_connection(self) -> tuple[bool, str]:
+        """
+        Test the connection to the LLM API.
+
+        Returns:
+            tuple[bool, str]: (success, message)
+        """
+        try:
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=10,
+                messages=[{"role": "user", "content": "test"}]
+            )
+            return True, "Connection successful"
+        except Exception as e:
+            return False, f"Connection failed: {e}"
     
     def generate_response(self, query: str,
                          conversation_history: Optional[str] = None,

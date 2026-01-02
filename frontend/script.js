@@ -122,10 +122,19 @@ function addMessage(content, type, sources = null, isWelcome = false) {
     let html = `<div class="message-content">${displayContent}</div>`;
     
     if (sources && sources.length > 0) {
+        // Render sources as numbered list with clickable links
+        const sourcesHtml = sources.map((source) => {
+            if (source.link) {
+                return `<li><a href="${escapeHtml(source.link)}" target="_blank" rel="noopener noreferrer" class="source-link">${escapeHtml(source.name)}</a></li>`;
+            } else {
+                return `<li>${escapeHtml(source.name)}</li>`;
+            }
+        }).join('');
+
         html += `
             <details class="sources-collapsible">
                 <summary class="sources-header">Sources</summary>
-                <div class="sources-content">${sources.join(', ')}</div>
+                <ol class="sources-list">${sourcesHtml}</ol>
             </details>
         `;
     }
