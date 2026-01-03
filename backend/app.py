@@ -61,6 +61,10 @@ class CourseStats(BaseModel):
     total_courses: int
     course_titles: List[str]
 
+class NewSessionResponse(BaseModel):
+    """Response model for new session creation"""
+    session_id: str
+
 # API Endpoints
 
 @app.post("/api/query", response_model=QueryResponse)
@@ -100,6 +104,18 @@ async def get_course_stats():
         )
     except Exception as e:
         logger.error("Error fetching course stats: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/session/new", response_model=NewSessionResponse)
+async def create_new_session():
+    """Create a new conversation session"""
+    logger.debug("Creating new session via API")
+    try:
+        session_id = rag_system.session_manager.create_session()
+        logger.info("Created new session: %s", session_id)
+        return NewSessionResponse(session_id=session_id)
+    except Exception as e:
+        logger.error("Error creating new session: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.on_event("startup")
