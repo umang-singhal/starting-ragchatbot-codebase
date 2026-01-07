@@ -4,7 +4,8 @@ Shared fixtures for RAG system tests.
 import sys
 import os
 from pathlib import Path
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, AsyncMock, patch
+from typing import Generator, Any
 import pytest
 
 # Add parent directory to path for imports
@@ -12,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from models import Course, Lesson, CourseChunk
 from vector_store import SearchResults
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture
@@ -176,3 +178,148 @@ def mock_session_manager():
     manager.create_session.return_value = "test_session_123"
     manager.get_conversation_history.return_value = None
     return manager
+
+
+# ============================================================================
+# API Testing Fixtures
+# ============================================================================
+
+@pytest.fixture
+def mock_rag_system():
+    """Mock RAGSystem for API testing."""
+    rag = MagicMock()
+
+    # Mock query method
+    rag.query.return_value = (
+        "This is a test response based on the course materials.",
+        [
+            {
+                "name": "Machine Learning Basics - Lesson 1",
+                "link": "https://example.com/ml#lesson1"
+            },
+            {
+                "name": "Machine Learning Basics - Lesson 2",
+                "link": "https://example.com/ml#lesson2"
+            }
+        ]
+    )
+
+    # Mock session manager
+    rag.session_manager = MagicMock()
+    rag.session_manager.create_session.return_value = "new_session_456"
+    rag.session_manager.get_conversation_history.return_value = None
+
+    # Mock get_course_analytics
+    rag.get_course_analytics.return_value = {
+        "total_courses": 2,
+        "course_titles": ["Machine Learning Basics", "Deep Learning Advanced"]
+    }
+
+    # Mock AI generator for connection test
+    rag.ai_generator = MagicMock()
+    rag.ai_generator.test_connection.return_value = (True, "Connection successful")
+
+    return rag
+
+
+@pytest.fixture
+def test_app(mock_rag_system):
+    """
+    Create a test FastAPI app without static file mounting.
+
+    This fixture creates a minimal FastAPI app with the same endpoints
+    as the production app but without the static file mount, which causes
+    issues in test environments where the frontend directory doesn't exist.
+    """
+    from fastapi import FastAPI, HTTPException
+    from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.middleware.trustedhost import TrustedHostMiddleware
+    from pydantic import BaseModel
+    from typing import List, Optional, Dict, Any
+
+    # Pydantic models
+    class QueryRequest(BaseModel):
+        query: str
+        session_id: Optional[str] = None
+
+    class QueryResponse(BaseModel):
+        answer: str
+        sources: List[Dict[str, Any]]
+        session_id: str
+
+    class CourseStats(BaseModel):
+        total_courses: int
+        course_titles: List[str]
+
+    class NewSessionResponse(BaseModel):
+        session_id: str
+
+    # Create test app
+    app = FastAPI(title="Course Materials RAG System (Test)")
+
+    # Add middleware
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
+
+    # Store mock rag_system in app state for access in endpoints
+    app.state.rag_system = mock_rag_system
+
+    @app.post("/api/query", response_model=QueryResponse)
+    async def query_documents(request: QueryRequest):
+        """Process a query and return response with sources."""
+        try:
+            session_id = request.session_id
+            if not session_id:
+                session_id = mock_rag_system.session_manager.create_session()
+
+            answer, sources = mock_rag_system.query(request.query, session_id)
+
+            return QueryResponse(
+                answer=answer,
+                sources=sources,
+                session_id=session_id
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.get("/api/courses", response_model=CourseStats)
+    async def get_course_stats():
+        """Get course analytics and statistics."""
+        try:
+            analytics = mock_rag_system.get_course_analytics()
+            return CourseStats(
+                total_courses=analytics["total_courses"],
+                course_titles=analytics["course_titles"]
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.post("/api/session/new", response_model=NewSessionResponse)
+    async def create_new_session():
+        """Create a new conversation session."""
+        try:
+            session_id = mock_rag_system.session_manager.create_session()
+            return NewSessionResponse(session_id=session_id)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.get("/")
+    async def root():
+        """Root endpoint for health check."""
+        return {"status": "healthy", "message": "RAG System API is running"}
+
+    return app
+
+
+@pytest.fixture
+def client(test_app):
+    """Create a test client for the FastAPI app."""
+    from fastapi.testclient import TestClient
+    return TestClient(test_app)
