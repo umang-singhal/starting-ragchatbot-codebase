@@ -5,7 +5,7 @@ const API_URL = '/api';
 let currentSessionId = null;
 
 // DOM elements
-let chatMessages, chatInput, sendButton, totalCourses, courseTitles, newChatButton;
+let chatMessages, chatInput, sendButton, totalCourses, courseTitles, newChatButton, themeToggle;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,8 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
     totalCourses = document.getElementById('totalCourses');
     courseTitles = document.getElementById('courseTitles');
     newChatButton = document.getElementById('newChatButton');
+    themeToggle = document.getElementById('themeToggle');
 
     setupEventListeners();
+    initTheme();
     createNewSession();
     loadCourseStats();
 });
@@ -33,7 +35,15 @@ function setupEventListeners() {
     // New chat button
     newChatButton.addEventListener('click', startNewChat);
 
-    
+    // Theme toggle button
+    themeToggle.addEventListener('click', toggleTheme);
+    themeToggle.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleTheme();
+        }
+    });
+
     // Suggested questions
     document.querySelectorAll('.suggested-item').forEach(button => {
         button.addEventListener('click', (e) => {
@@ -42,6 +52,46 @@ function setupEventListeners() {
             sendMessage();
         });
     });
+}
+
+// Theme Management
+function initTheme() {
+    // Check for saved theme preference or default to system preference
+    const savedTheme = localStorage.getItem('theme');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    if (savedTheme) {
+        // Use saved preference
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    } else if (systemPrefersDark) {
+        // Use system preference (dark mode)
+        document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+        // Default to light mode if no saved preference and system prefers light
+        document.documentElement.setAttribute('data-theme', 'light');
+    }
+
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        // Only auto-switch if user hasn't set a preference
+        if (!localStorage.getItem('theme')) {
+            document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+        }
+    });
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+    // Apply new theme
+    document.documentElement.setAttribute('data-theme', newTheme);
+
+    // Save preference to localStorage
+    localStorage.setItem('theme', newTheme);
+
+    // Update button aria-label for accessibility
+    themeToggle.setAttribute('aria-label', `Switch to ${currentTheme} mode`);
 }
 
 
