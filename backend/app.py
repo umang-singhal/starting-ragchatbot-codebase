@@ -128,7 +128,8 @@ async def startup_event():
         logger.info("LLM connection test: %s", message)
     else:
         logger.error("LLM connection test failed: %s", message)
-
+        raise HTTPException(status_code=500, detail="LLM connection test failed")
+    
     # Load documents
     docs_path = "../docs"
     logger.info("Loading initial documents from %s", docs_path)
