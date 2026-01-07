@@ -6,6 +6,7 @@ from typing import List, Optional, Dict, Any
 @dataclass
 class _ToolCallingState:
     """Internal state for sequential tool calling loop"""
+
     messages: List[Dict[str, Any]]
     current_round: int
     max_rounds: int
@@ -14,7 +15,7 @@ class _ToolCallingState:
 
 class AIGenerator:
     """Handles interactions with Anthropic's Claude API for generating responses"""
-    
+
     # Static system prompt to avoid rebuilding on each call
     SYSTEM_PROMPT = """ You are an AI assistant specialized in course materials and educational content with access to a comprehensive search tool for course information.
 
@@ -44,16 +45,12 @@ All responses must be:
 4. **Example-supported** - Include relevant examples when they aid understanding
 Provide only the direct answer to what was asked.
 """
-    
+
     def __init__(self, api_key: str, model: str):
         self.client = anthropic.Anthropic(api_key=api_key)
         self.model = model
         # Pre-build base API parameters
-        self.base_params = {
-            "model": self.model,
-            "temperature": 0,
-            "max_tokens": 800
-        }
+        self.base_params = {"model": self.model, "temperature": 0, "max_tokens": 800}
 
     def test_connection(self) -> tuple[bool, str]:
         """
@@ -64,9 +61,7 @@ Provide only the direct answer to what was asked.
         """
         try:
             response = self.client.messages.create(
-                model=self.model,
-                max_tokens=10,
-                messages=[{"role": "user", "content": "test"}]
+                model=self.model, max_tokens=10, messages=[{"role": "user", "content": "test"}]
             )
             return True, "Connection successful"
         except Exception as e:
@@ -88,7 +83,7 @@ Provide only the direct answer to what was asked.
         """
         text_parts = []
         for block in response.content:
-            if hasattr(block, 'text'):
+            if hasattr(block, "text"):
                 # This is a text block
                 text_parts.append(block.text)
             # tool_use blocks are ignored - they don't contain user-facing text
@@ -99,59 +94,58 @@ Provide only the direct answer to what was asked.
             return ""
 
         return "".join(text_parts)
-    
-    def generate_response(self, query: str,
-                         conversation_history: Optional[str] = None,
-                         tools: Optional[List] = None,
-                         tool_manager=None) -> str:
+
+    def generate_response(
+        self,
+        query: str,
+        conversation_history: Optional[str] = None,
+        tools: Optional[List] = None,
+        tool_manager=None,
+    ) -> str:
         """
         Generate AI response with optional tool usage and conversation context.
-        
+
         Args:
             query: The user's question or request
             conversation_history: Previous messages for context
             tools: Available tools the AI can use
             tool_manager: Manager to execute tools
-            
+
         Returns:
             Generated response as string
         """
-        
+
         # Build system content efficiently - avoid string ops when possible
         system_content = (
             f"{self.SYSTEM_PROMPT}\n\nPrevious conversation:\n{conversation_history}"
-            if conversation_history 
+            if conversation_history
             else self.SYSTEM_PROMPT
         )
-        
+
         # Prepare API call parameters efficiently
         api_params = {
             **self.base_params,
             "messages": [{"role": "user", "content": query}],
-            "system": system_content
+            "system": system_content,
         }
-        
+
         # Add tools if available
         if tools:
             api_params["tools"] = tools
             api_params["tool_choice"] = {"type": "auto"}
-        
+
         # Get response from Claude
         response = self.client.messages.create(**api_params)
-        
+
         # Handle tool execution if needed
         if response.stop_reason == "tool_use" and tool_manager:
             return self._handle_tool_execution(response, api_params, tool_manager)
 
         # Return direct response (extract text, filtering out tool_use blocks)
         return self._extract_text_from_response(response)
-    
+
     def _handle_tool_execution(
-        self,
-        initial_response,
-        base_params: Dict[str, Any],
-        tool_manager,
-        max_rounds: int = 2
+        self, initial_response, base_params: Dict[str, Any], tool_manager, max_rounds: int = 2
     ) -> str:
         """
         Handle execution of tool calls with support for sequential tool calling.
@@ -192,18 +186,13 @@ Provide only the direct answer to what was asked.
                 return self._make_final_api_call(state, base_params)
 
             # Make intermediate API call (tools still available)
-            state.last_response = self._make_intermediate_api_call(
-                state, base_params, tool_manager
-            )
+            state.last_response = self._make_intermediate_api_call(state, base_params, tool_manager)
 
         # Should not reach here, but handle edge case
         return self._extract_text_from_response(state.last_response)
 
     def _initialize_tool_calling_state(
-        self,
-        initial_response,
-        base_params: Dict[str, Any],
-        max_rounds: int
+        self, initial_response, base_params: Dict[str, Any], max_rounds: int
     ) -> _ToolCallingState:
         """Initialize the state for sequential tool calling loop"""
         messages = base_params["messages"].copy()
@@ -211,21 +200,14 @@ Provide only the direct answer to what was asked.
             messages=messages,
             current_round=0,
             max_rounds=max_rounds,
-            last_response=initial_response
+            last_response=initial_response,
         )
 
     def _has_tool_use_blocks(self, response) -> bool:
         """Check if response contains any tool_use content blocks"""
-        return any(
-            block.type == "tool_use"
-            for block in response.content
-        )
+        return any(block.type == "tool_use" for block in response.content)
 
-    def _execute_tools_for_round(
-        self,
-        state: _ToolCallingState,
-        tool_manager
-    ) -> Dict[str, Any]:
+    def _execute_tools_for_round(self, state: _ToolCallingState, tool_manager) -> Dict[str, Any]:
         """
         Execute all tools from the current response.
 
@@ -245,14 +227,15 @@ Provide only the direct answer to what was asked.
             if content_block.type == "tool_use":
                 try:
                     tool_result = tool_manager.execute_tool(
-                        content_block.name,
-                        **content_block.input
+                        content_block.name, **content_block.input
                     )
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": content_block.id,
-                        "content": tool_result
-                    })
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": content_block.id,
+                            "content": tool_result,
+                        }
+                    )
                 except Exception as e:
                     return {"error": f"Tool execution failed: {str(e)}", "tool_messages": []}
 
@@ -267,10 +250,7 @@ Provide only the direct answer to what was asked.
         return f"I encountered an error while searching: {error_message}"
 
     def _make_intermediate_api_call(
-        self,
-        state: _ToolCallingState,
-        base_params: Dict[str, Any],
-        tool_manager
+        self, state: _ToolCallingState, base_params: Dict[str, Any], tool_manager
     ):
         """
         Make an intermediate API call with tools still available.
@@ -281,16 +261,12 @@ Provide only the direct answer to what was asked.
             "messages": state.messages,
             "system": base_params["system"],
             "tools": tool_manager.get_tool_definitions(),
-            "tool_choice": {"type": "auto"}
+            "tool_choice": {"type": "auto"},
         }
 
         return self.client.messages.create(**api_params)
 
-    def _make_final_api_call(
-        self,
-        state: _ToolCallingState,
-        base_params: Dict[str, Any]
-    ) -> str:
+    def _make_final_api_call(self, state: _ToolCallingState, base_params: Dict[str, Any]) -> str:
         """
         Make the final API call without tools to force completion.
         This is called when max_rounds is reached.
@@ -298,7 +274,7 @@ Provide only the direct answer to what was asked.
         api_params = {
             **self.base_params,
             "messages": state.messages,
-            "system": base_params["system"]
+            "system": base_params["system"],
         }
 
         final_response = self.client.messages.create(**api_params)

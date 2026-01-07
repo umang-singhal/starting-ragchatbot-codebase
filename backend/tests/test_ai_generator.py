@@ -1,6 +1,7 @@
 """
 Tests for ai_generator.py - AI response generation and tool calling.
 """
+
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, Mock
@@ -32,11 +33,7 @@ class TestAIGenerator:
         generator = AIGenerator.__new__(AIGenerator)
         generator.client = mock_client
         generator.model = "test-model"
-        generator.base_params = {
-            "model": "test-model",
-            "temperature": 0,
-            "max_tokens": 800
-        }
+        generator.base_params = {"model": "test-model", "temperature": 0, "max_tokens": 800}
 
         response = generator.generate_response("What is Python?")
 
@@ -60,10 +57,7 @@ class TestAIGenerator:
         tool_use_block.type = "tool_use"
         tool_use_block.id = "tool_123"
         tool_use_block.name = "search_course_content"
-        tool_use_block.input = {
-            "query": "machine learning",
-            "course_name": "ML Course"
-        }
+        tool_use_block.input = {"query": "machine learning", "course_name": "ML Course"}
 
         initial_response.content = [tool_use_block]
 
@@ -80,27 +74,24 @@ class TestAIGenerator:
         generator = AIGenerator.__new__(AIGenerator)
         generator.client = mock_client
         generator.model = "test-model"
-        generator.base_params = {
-            "model": "test-model",
-            "temperature": 0,
-            "max_tokens": 800
-        }
+        generator.base_params = {"model": "test-model", "temperature": 0, "max_tokens": 800}
 
         # Mock tool manager
         mock_tool_manager = MagicMock()
         mock_tool_manager.execute_tool.return_value = (
-            "[ML Course - Lesson 1]\n"
-            "Machine learning is a subset of artificial intelligence..."
+            "[ML Course - Lesson 1]\n" "Machine learning is a subset of artificial intelligence..."
         )
 
         response = generator.generate_response(
             "Tell me about machine learning in the ML Course",
-            tools=[{
-                "name": "search_course_content",
-                "description": "Search course materials",
-                "input_schema": {"type": "object"}
-            }],
-            tool_manager=mock_tool_manager
+            tools=[
+                {
+                    "name": "search_course_content",
+                    "description": "Search course materials",
+                    "input_schema": {"type": "object"},
+                }
+            ],
+            tool_manager=mock_tool_manager,
         )
 
         # Assert tool was called with correct parameters
@@ -130,22 +121,15 @@ class TestAIGenerator:
         generator = AIGenerator.__new__(AIGenerator)
         generator.client = mock_client
         generator.model = "test-model"
-        generator.base_params = {
-            "model": "test-model",
-            "temperature": 0,
-            "max_tokens": 800
-        }
+        generator.base_params = {"model": "test-model", "temperature": 0, "max_tokens": 800}
 
         # Mock tool manager
         mock_tool_manager = MagicMock()
 
         response = generator.generate_response(
             "What is the capital of France?",
-            tools=[{
-                "name": "search_course_content",
-                "description": "Search course materials"
-            }],
-            tool_manager=mock_tool_manager
+            tools=[{"name": "search_course_content", "description": "Search course materials"}],
+            tool_manager=mock_tool_manager,
         )
 
         # Tool should NOT be called for general knowledge
@@ -167,17 +151,10 @@ class TestAIGenerator:
         generator = AIGenerator.__new__(AIGenerator)
         generator.client = mock_client
         generator.model = "test-model"
-        generator.base_params = {
-            "model": "test-model",
-            "temperature": 0,
-            "max_tokens": 800
-        }
+        generator.base_params = {"model": "test-model", "temperature": 0, "max_tokens": 800}
 
         history = "User: First question\nAssistant: First answer"
-        response = generator.generate_response(
-            "Follow-up question",
-            conversation_history=history
-        )
+        response = generator.generate_response("Follow-up question", conversation_history=history)
 
         # Check that history was included in system prompt
         call_args = mock_client.messages.create.call_args
@@ -248,11 +225,7 @@ class TestAIGenerator:
         generator = AIGenerator.__new__(AIGenerator)
         generator.client = mock_client
         generator.model = "test-model"
-        generator.base_params = {
-            "model": "test-model",
-            "temperature": 0,
-            "max_tokens": 800
-        }
+        generator.base_params = {"model": "test-model", "temperature": 0, "max_tokens": 800}
 
         # Mock tool manager to return empty results
         mock_tool_manager = MagicMock()
@@ -260,11 +233,8 @@ class TestAIGenerator:
 
         response = generator.generate_response(
             "Tell me about nonexistent topic",
-            tools=[{
-                "name": "search_course_content",
-                "description": "Search course materials"
-            }],
-            tool_manager=mock_tool_manager
+            tools=[{"name": "search_course_content", "description": "Search course materials"}],
+            tool_manager=mock_tool_manager,
         )
 
         # Tool was called but returned empty results
@@ -286,11 +256,7 @@ class TestAIGenerator:
         generator = AIGenerator.__new__(AIGenerator)
         generator.client = mock_client
         generator.model = "test-model"
-        generator.base_params = {
-            "model": "test-model",
-            "temperature": 0,
-            "max_tokens": 800
-        }
+        generator.base_params = {"model": "test-model", "temperature": 0, "max_tokens": 800}
 
         generator.generate_response("Test question")
 
@@ -348,40 +314,28 @@ class TestAIGenerator:
         final_response.content = [final_content]
 
         # Set up create to return different responses on sequential calls
-        mock_client.messages.create.side_effect = [
-            first_response,
-            second_response,
-            final_response
-        ]
+        mock_client.messages.create.side_effect = [first_response, second_response, final_response]
 
         # Create generator with mocked client
         generator = AIGenerator.__new__(AIGenerator)
         generator.client = mock_client
         generator.model = "test-model"
-        generator.base_params = {
-            "model": "test-model",
-            "temperature": 0,
-            "max_tokens": 800
-        }
+        generator.base_params = {"model": "test-model", "temperature": 0, "max_tokens": 800}
 
         # Mock tool manager
         mock_tool_manager = MagicMock()
-        mock_tool_manager.get_tool_definitions.return_value = [{
-            "name": "get_course_outline",
-            "description": "Get course outline"
-        }]
+        mock_tool_manager.get_tool_definitions.return_value = [
+            {"name": "get_course_outline", "description": "Get course outline"}
+        ]
         mock_tool_manager.execute_tool.side_effect = [
             "Lesson 4: Decorators and Generators",
-            "[Content about decorators...]"
+            "[Content about decorators...]",
         ]
 
         response = generator.generate_response(
             "What does lesson 4 of Python Course cover?",
-            tools=[{
-                "name": "get_course_outline",
-                "description": "Get course outline"
-            }],
-            tool_manager=mock_tool_manager
+            tools=[{"name": "get_course_outline", "description": "Get course outline"}],
+            tool_manager=mock_tool_manager,
         )
 
         # Both tools were called
@@ -422,40 +376,25 @@ class TestAIGenerator:
         final_content.text = "Based on the search results..."
         final_response.content = [final_content]
 
-        mock_client.messages.create.side_effect = [
-            first_response,
-            second_response,
-            final_response
-        ]
+        mock_client.messages.create.side_effect = [first_response, second_response, final_response]
 
         # Create generator with mocked client
         generator = AIGenerator.__new__(AIGenerator)
         generator.client = mock_client
         generator.model = "test-model"
-        generator.base_params = {
-            "model": "test-model",
-            "temperature": 0,
-            "max_tokens": 800
-        }
+        generator.base_params = {"model": "test-model", "temperature": 0, "max_tokens": 800}
 
         # Mock tool manager
         mock_tool_manager = MagicMock()
-        mock_tool_manager.get_tool_definitions.return_value = [{
-            "name": "search_course_content",
-            "description": "Search course materials"
-        }]
-        mock_tool_manager.execute_tool.side_effect = [
-            "Result 1",
-            "Result 2"
+        mock_tool_manager.get_tool_definitions.return_value = [
+            {"name": "search_course_content", "description": "Search course materials"}
         ]
+        mock_tool_manager.execute_tool.side_effect = ["Result 1", "Result 2"]
 
         response = generator.generate_response(
             "Multi-part question",
-            tools=[{
-                "name": "search_course_content",
-                "description": "Search course materials"
-            }],
-            tool_manager=mock_tool_manager
+            tools=[{"name": "search_course_content", "description": "Search course materials"}],
+            tool_manager=mock_tool_manager,
         )
 
         # Exactly 2 tools were called (max_rounds=2)
@@ -482,22 +421,15 @@ class TestAIGenerator:
         generator = AIGenerator.__new__(AIGenerator)
         generator.client = mock_client
         generator.model = "test-model"
-        generator.base_params = {
-            "model": "test-model",
-            "temperature": 0,
-            "max_tokens": 800
-        }
+        generator.base_params = {"model": "test-model", "temperature": 0, "max_tokens": 800}
 
         # Mock tool manager (should not be called)
         mock_tool_manager = MagicMock()
 
         response = generator.generate_response(
             "What is the capital of France?",
-            tools=[{
-                "name": "search_course_content",
-                "description": "Search course materials"
-            }],
-            tool_manager=mock_tool_manager
+            tools=[{"name": "search_course_content", "description": "Search course materials"}],
+            tool_manager=mock_tool_manager,
         )
 
         # Tool was NOT called for general knowledge
@@ -531,27 +463,19 @@ class TestAIGenerator:
         generator = AIGenerator.__new__(AIGenerator)
         generator.client = mock_client
         generator.model = "test-model"
-        generator.base_params = {
-            "model": "test-model",
-            "temperature": 0,
-            "max_tokens": 800
-        }
+        generator.base_params = {"model": "test-model", "temperature": 0, "max_tokens": 800}
 
         # Mock tool manager that raises an exception
         mock_tool_manager = MagicMock()
-        mock_tool_manager.get_tool_definitions.return_value = [{
-            "name": "search_course_content",
-            "description": "Search course materials"
-        }]
+        mock_tool_manager.get_tool_definitions.return_value = [
+            {"name": "search_course_content", "description": "Search course materials"}
+        ]
         mock_tool_manager.execute_tool.side_effect = Exception("Database connection failed")
 
         response = generator.generate_response(
             "Test question",
-            tools=[{
-                "name": "search_course_content",
-                "description": "Search course materials"
-            }],
-            tool_manager=mock_tool_manager
+            tools=[{"name": "search_course_content", "description": "Search course materials"}],
+            tool_manager=mock_tool_manager,
         )
 
         # Should return error message
@@ -595,30 +519,22 @@ class TestAIGenerator:
         generator = AIGenerator.__new__(AIGenerator)
         generator.client = mock_client
         generator.model = "test-model"
-        generator.base_params = {
-            "model": "test-model",
-            "temperature": 0,
-            "max_tokens": 800
-        }
+        generator.base_params = {"model": "test-model", "temperature": 0, "max_tokens": 800}
 
         # Mock tool manager
         mock_tool_manager = MagicMock()
-        mock_tool_manager.get_tool_definitions.return_value = [{
-            "name": "get_course_outline",
-            "description": "Get course outline"
-        }]
+        mock_tool_manager.get_tool_definitions.return_value = [
+            {"name": "get_course_outline", "description": "Get course outline"}
+        ]
         mock_tool_manager.execute_tool.side_effect = [
             "Python Course Outline...",
-            "Java Course Outline..."
+            "Java Course Outline...",
         ]
 
         response = generator.generate_response(
             "Show me outlines for Python and Java courses",
-            tools=[{
-                "name": "get_course_outline",
-                "description": "Get course outline"
-            }],
-            tool_manager=mock_tool_manager
+            tools=[{"name": "get_course_outline", "description": "Get course outline"}],
+            tool_manager=mock_tool_manager,
         )
 
         # Both tools were executed in same round
@@ -645,7 +561,7 @@ class TestAIGenerator:
 
         # Tool use block (should be filtered out) - simulate real API where
         # tool_use blocks don't have a .text attribute
-        tool_use_block = Mock(spec=['type', 'id', 'name', 'input'])
+        tool_use_block = Mock(spec=["type", "id", "name", "input"])
         tool_use_block.type = "tool_use"
         tool_use_block.id = "tool_123"
         tool_use_block.name = "search_course_content"
@@ -658,11 +574,7 @@ class TestAIGenerator:
         generator = AIGenerator.__new__(AIGenerator)
         generator.client = mock_client
         generator.model = "test-model"
-        generator.base_params = {
-            "model": "test-model",
-            "temperature": 0,
-            "max_tokens": 800
-        }
+        generator.base_params = {"model": "test-model", "temperature": 0, "max_tokens": 800}
 
         # Test the _extract_text_from_response method
         extracted_text = generator._extract_text_from_response(mixed_response)
@@ -682,7 +594,7 @@ class TestAIGenerator:
 
         # Tool use block - use spec to simulate real API where tool_use blocks
         # don't have a .text attribute
-        tool_use_block = Mock(spec=['type', 'id', 'name', 'input'])
+        tool_use_block = Mock(spec=["type", "id", "name", "input"])
         tool_use_block.type = "tool_use"
         tool_use_block.id = "tool_123"
         tool_use_block.name = "search_course_content"

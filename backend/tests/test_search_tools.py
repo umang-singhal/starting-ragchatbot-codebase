@@ -1,6 +1,7 @@
 """
 Tests for search_tools.py - CourseSearchTool and CourseOutlineTool.
 """
+
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -46,10 +47,7 @@ class TestCourseSearchTool:
         """Test search with query and course name (fixed behavior)."""
         tool = CourseSearchTool(mock_vector_store_fixed)
 
-        result = tool.execute(
-            query="neural networks",
-            course_name="Machine Learning"
-        )
+        result = tool.execute(query="neural networks", course_name="Machine Learning")
 
         assert "Machine Learning Basics" in result
         assert len(tool.last_sources) > 0
@@ -61,9 +59,7 @@ class TestCourseSearchTool:
         tool = CourseSearchTool(mock_vector_store_fixed)
 
         result = tool.execute(
-            query="algorithms",
-            course_name="Machine Learning Basics",
-            lesson_number=1
+            query="algorithms", course_name="Machine Learning Basics", lesson_number=1
         )
 
         assert "Lesson 1" in result
@@ -127,12 +123,14 @@ class TestCourseOutlineTool:
         # Set up mock for course catalog get
         mock_catalog = MagicMock()
         mock_catalog.get.return_value = {
-            'metadatas': [{
-                'title': 'Machine Learning Basics',
-                'instructor': 'Dr. Smith',
-                'course_link': 'https://example.com/ml',
-                'lessons_json': '[{"lesson_number": 1, "lesson_title": "Introduction", "lesson_link": "https://example.com/l1"}]'
-            }]
+            "metadatas": [
+                {
+                    "title": "Machine Learning Basics",
+                    "instructor": "Dr. Smith",
+                    "course_link": "https://example.com/ml",
+                    "lessons_json": '[{"lesson_number": 1, "lesson_title": "Introduction", "lesson_link": "https://example.com/l1"}]',
+                }
+            ]
         }
         mock_vector_store_fixed.course_catalog = mock_catalog
 
@@ -174,7 +172,7 @@ class TestToolManager:
         mock_tool = MagicMock()
         mock_tool.get_tool_definition.return_value = {
             "name": "test_tool",
-            "description": "Test tool"
+            "description": "Test tool",
         }
         mock_tool.execute.return_value = "Tool executed"
 

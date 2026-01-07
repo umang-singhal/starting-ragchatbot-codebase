@@ -1,6 +1,7 @@
 """
 Tests for rag_system.py - RAG System integration tests.
 """
+
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -17,7 +18,9 @@ from rag_system import RAGSystem
 class TestRAGSystem:
     """Tests for RAGSystem query flow."""
 
-    def test_rag_query_with_content_question_buggy(self, mock_vector_store, mock_ai_generator, mock_session_manager):
+    def test_rag_query_with_content_question_buggy(
+        self, mock_vector_store, mock_ai_generator, mock_session_manager
+    ):
         """
         Test full query flow for course content question with BUG (max_results=0).
         This should demonstrate the bug - empty sources returned.
@@ -31,13 +34,15 @@ class TestRAGSystem:
         config.MAX_RESULTS = 0  # BUG: This causes empty results
 
         # Create RAG system with mocked components
-        with patch('rag_system.VectorStore', return_value=mock_vector_store), \
-             patch('rag_system.AIGenerator', return_value=mock_ai_generator), \
-             patch('rag_system.SessionManager', return_value=mock_session_manager), \
-             patch('rag_system.DocumentProcessor'), \
-             patch('rag_system.ToolManager'), \
-             patch('rag_system.CourseSearchTool'), \
-             patch('rag_system.CourseOutlineTool'):
+        with (
+            patch("rag_system.VectorStore", return_value=mock_vector_store),
+            patch("rag_system.AIGenerator", return_value=mock_ai_generator),
+            patch("rag_system.SessionManager", return_value=mock_session_manager),
+            patch("rag_system.DocumentProcessor"),
+            patch("rag_system.ToolManager"),
+            patch("rag_system.CourseSearchTool"),
+            patch("rag_system.CourseOutlineTool"),
+        ):
 
             rag_system = RAGSystem(config)
             rag_system.vector_store = mock_vector_store
@@ -45,11 +50,12 @@ class TestRAGSystem:
             rag_system.session_manager = mock_session_manager
 
             # Mock the query to simulate empty results due to bug
-            mock_ai_generator.generate_response.return_value = "No relevant content found in the course materials."
+            mock_ai_generator.generate_response.return_value = (
+                "No relevant content found in the course materials."
+            )
 
             response, sources = rag_system.query(
-                "What is covered in Lesson 1?",
-                session_id="test_session"
+                "What is covered in Lesson 1?", session_id="test_session"
             )
 
             # With bug, sources should be empty
@@ -57,7 +63,9 @@ class TestRAGSystem:
             # Empty sources due to max_results=0 bug
             assert len(sources) == 0, "Bug: max_results=0 returns empty sources"
 
-    def test_rag_query_with_content_question_fixed(self, mock_vector_store_fixed, mock_ai_generator, mock_session_manager):
+    def test_rag_query_with_content_question_fixed(
+        self, mock_vector_store_fixed, mock_ai_generator, mock_session_manager
+    ):
         """
         Test full query flow for course content question with FIX (max_results>0).
         This should return actual results with sources.
@@ -69,13 +77,15 @@ class TestRAGSystem:
         config.EMBEDDING_MODEL = "all-MiniLM-L6-v2"
         config.MAX_RESULTS = 5  # FIXED: Returns results
 
-        with patch('rag_system.VectorStore', return_value=mock_vector_store_fixed), \
-             patch('rag_system.AIGenerator', return_value=mock_ai_generator), \
-             patch('rag_system.SessionManager', return_value=mock_session_manager), \
-             patch('rag_system.DocumentProcessor'), \
-             patch('rag_system.ToolManager'), \
-             patch('rag_system.CourseSearchTool'), \
-             patch('rag_system.CourseOutlineTool'):
+        with (
+            patch("rag_system.VectorStore", return_value=mock_vector_store_fixed),
+            patch("rag_system.AIGenerator", return_value=mock_ai_generator),
+            patch("rag_system.SessionManager", return_value=mock_session_manager),
+            patch("rag_system.DocumentProcessor"),
+            patch("rag_system.ToolManager"),
+            patch("rag_system.CourseSearchTool"),
+            patch("rag_system.CourseOutlineTool"),
+        ):
 
             rag_system = RAGSystem(config)
             rag_system.vector_store = mock_vector_store_fixed
@@ -95,8 +105,7 @@ class TestRAGSystem:
             rag_system.tool_manager = mock_tool_manager
 
             response, sources = rag_system.query(
-                "What is covered in Lesson 1?",
-                session_id="test_session"
+                "What is covered in Lesson 1?", session_id="test_session"
             )
 
             assert response is not None
@@ -104,7 +113,9 @@ class TestRAGSystem:
             assert len(sources) > 0, "Fixed: max_results>0 returns sources"
             assert sources[0]["name"] == "Machine Learning Basics - Lesson 1"
 
-    def test_rag_query_with_general_question(self, mock_vector_store, mock_ai_generator, mock_session_manager):
+    def test_rag_query_with_general_question(
+        self, mock_vector_store, mock_ai_generator, mock_session_manager
+    ):
         """Test query flow for general knowledge question (no tool needed)."""
         config = MagicMock()
         config.CHUNK_SIZE = 800
@@ -113,13 +124,15 @@ class TestRAGSystem:
         config.EMBEDDING_MODEL = "all-MiniLM-L6-v2"
         config.MAX_RESULTS = 5
 
-        with patch('rag_system.VectorStore', return_value=mock_vector_store), \
-             patch('rag_system.AIGenerator', return_value=mock_ai_generator), \
-             patch('rag_system.SessionManager', return_value=mock_session_manager), \
-             patch('rag_system.DocumentProcessor'), \
-             patch('rag_system.ToolManager'), \
-             patch('rag_system.CourseSearchTool'), \
-             patch('rag_system.CourseOutlineTool'):
+        with (
+            patch("rag_system.VectorStore", return_value=mock_vector_store),
+            patch("rag_system.AIGenerator", return_value=mock_ai_generator),
+            patch("rag_system.SessionManager", return_value=mock_session_manager),
+            patch("rag_system.DocumentProcessor"),
+            patch("rag_system.ToolManager"),
+            patch("rag_system.CourseSearchTool"),
+            patch("rag_system.CourseOutlineTool"),
+        ):
 
             rag_system = RAGSystem(config)
             rag_system.vector_store = mock_vector_store
@@ -135,15 +148,16 @@ class TestRAGSystem:
             rag_system.tool_manager = mock_tool_manager
 
             response, sources = rag_system.query(
-                "What is the capital of France?",
-                session_id="test_session"
+                "What is the capital of France?", session_id="test_session"
             )
 
             assert response is not None
             # Sources should be empty for general knowledge
             assert len(sources) == 0
 
-    def test_rag_query_creates_session_if_not_provided(self, mock_vector_store, mock_ai_generator, mock_session_manager):
+    def test_rag_query_creates_session_if_not_provided(
+        self, mock_vector_store, mock_ai_generator, mock_session_manager
+    ):
         """Test that query creates session when session_id is None."""
         config = MagicMock()
         config.CHUNK_SIZE = 800
@@ -152,13 +166,15 @@ class TestRAGSystem:
         config.EMBEDDING_MODEL = "all-MiniLM-L6-v2"
         config.MAX_RESULTS = 5
 
-        with patch('rag_system.VectorStore', return_value=mock_vector_store), \
-             patch('rag_system.AIGenerator', return_value=mock_ai_generator), \
-             patch('rag_system.SessionManager', return_value=mock_session_manager), \
-             patch('rag_system.DocumentProcessor'), \
-             patch('rag_system.ToolManager'), \
-             patch('rag_system.CourseSearchTool'), \
-             patch('rag_system.CourseOutlineTool'):
+        with (
+            patch("rag_system.VectorStore", return_value=mock_vector_store),
+            patch("rag_system.AIGenerator", return_value=mock_ai_generator),
+            patch("rag_system.SessionManager", return_value=mock_session_manager),
+            patch("rag_system.DocumentProcessor"),
+            patch("rag_system.ToolManager"),
+            patch("rag_system.CourseSearchTool"),
+            patch("rag_system.CourseOutlineTool"),
+        ):
 
             rag_system = RAGSystem(config)
             rag_system.vector_store = mock_vector_store
@@ -175,7 +191,9 @@ class TestRAGSystem:
 
             assert response is not None
 
-    def test_rag_query_updates_conversation_history(self, mock_vector_store, mock_ai_generator, mock_session_manager):
+    def test_rag_query_updates_conversation_history(
+        self, mock_vector_store, mock_ai_generator, mock_session_manager
+    ):
         """Test that exchanges are added to session history."""
         config = MagicMock()
         config.CHUNK_SIZE = 800
@@ -184,13 +202,15 @@ class TestRAGSystem:
         config.EMBEDDING_MODEL = "all-MiniLM-L6-v2"
         config.MAX_RESULTS = 5
 
-        with patch('rag_system.VectorStore', return_value=mock_vector_store), \
-             patch('rag_system.AIGenerator', return_value=mock_ai_generator), \
-             patch('rag_system.SessionManager', return_value=mock_session_manager), \
-             patch('rag_system.DocumentProcessor'), \
-             patch('rag_system.ToolManager'), \
-             patch('rag_system.CourseSearchTool'), \
-             patch('rag_system.CourseOutlineTool'):
+        with (
+            patch("rag_system.VectorStore", return_value=mock_vector_store),
+            patch("rag_system.AIGenerator", return_value=mock_ai_generator),
+            patch("rag_system.SessionManager", return_value=mock_session_manager),
+            patch("rag_system.DocumentProcessor"),
+            patch("rag_system.ToolManager"),
+            patch("rag_system.CourseSearchTool"),
+            patch("rag_system.CourseOutlineTool"),
+        ):
 
             rag_system = RAGSystem(config)
             rag_system.vector_store = mock_vector_store
@@ -220,7 +240,9 @@ class TestRAGSystem:
             assert "general question" in call_args[0][1]
             assert call_args[0][2] == "AI response to question"
 
-    def test_rag_get_course_analytics(self, mock_vector_store, mock_ai_generator, mock_session_manager):
+    def test_rag_get_course_analytics(
+        self, mock_vector_store, mock_ai_generator, mock_session_manager
+    ):
         """Test getting course statistics."""
         config = MagicMock()
         config.CHUNK_SIZE = 800
@@ -229,13 +251,15 @@ class TestRAGSystem:
         config.EMBEDDING_MODEL = "all-MiniLM-L6-v2"
         config.MAX_RESULTS = 5
 
-        with patch('rag_system.VectorStore', return_value=mock_vector_store), \
-             patch('rag_system.AIGenerator', return_value=mock_ai_generator), \
-             patch('rag_system.SessionManager', return_value=mock_session_manager), \
-             patch('rag_system.DocumentProcessor'), \
-             patch('rag_system.ToolManager'), \
-             patch('rag_system.CourseSearchTool'), \
-             patch('rag_system.CourseOutlineTool'):
+        with (
+            patch("rag_system.VectorStore", return_value=mock_vector_store),
+            patch("rag_system.AIGenerator", return_value=mock_ai_generator),
+            patch("rag_system.SessionManager", return_value=mock_session_manager),
+            patch("rag_system.DocumentProcessor"),
+            patch("rag_system.ToolManager"),
+            patch("rag_system.CourseSearchTool"),
+            patch("rag_system.CourseOutlineTool"),
+        ):
 
             rag_system = RAGSystem(config)
             rag_system.vector_store = mock_vector_store
@@ -245,7 +269,11 @@ class TestRAGSystem:
             # Mock vector store methods
             mock_vector_store.get_course_count.return_value = 5
             mock_vector_store.get_existing_course_titles.return_value = [
-                "Course 1", "Course 2", "Course 3", "Course 4", "Course 5"
+                "Course 1",
+                "Course 2",
+                "Course 3",
+                "Course 4",
+                "Course 5",
             ]
 
             analytics = rag_system.get_course_analytics()
@@ -264,13 +292,15 @@ class TestRAGSystem:
         config.ANTHROPIC_API_KEY = "test_key"
         config.ANTHROPIC_MODEL = "test-model"
 
-        with patch('rag_system.VectorStore'), \
-             patch('rag_system.AIGenerator'), \
-             patch('rag_system.SessionManager'), \
-             patch('rag_system.DocumentProcessor'), \
-             patch('rag_system.ToolManager') as mock_tm, \
-             patch('rag_system.CourseSearchTool') as mock_st, \
-             patch('rag_system.CourseOutlineTool') as mock_ot:
+        with (
+            patch("rag_system.VectorStore"),
+            patch("rag_system.AIGenerator"),
+            patch("rag_system.SessionManager"),
+            patch("rag_system.DocumentProcessor"),
+            patch("rag_system.ToolManager") as mock_tm,
+            patch("rag_system.CourseSearchTool") as mock_st,
+            patch("rag_system.CourseOutlineTool") as mock_ot,
+        ):
 
             rag_system = RAGSystem(config)
 

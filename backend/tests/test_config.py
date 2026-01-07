@@ -1,6 +1,7 @@
 """
 Tests for config.py - Configuration validation.
 """
+
 import sys
 from pathlib import Path
 
@@ -33,9 +34,9 @@ class TestConfig:
     def test_config_chunk_size_should_be_reasonable(self):
         """CHUNK_SIZE should be between 100 and 2000."""
         config = Config()
-        assert 100 <= config.CHUNK_SIZE <= 2000, (
-            f"CHUNK_SIZE={config.CHUNK_SIZE} is outside reasonable range [100, 2000]"
-        )
+        assert (
+            100 <= config.CHUNK_SIZE <= 2000
+        ), f"CHUNK_SIZE={config.CHUNK_SIZE} is outside reasonable range [100, 2000]"
 
     def test_config_chunk_overlap_less_than_chunk_size(self):
         """CHUNK_OVERLAP should be less than CHUNK_SIZE."""
@@ -48,9 +49,7 @@ class TestConfig:
     def test_config_max_history_positive(self):
         """MAX_HISTORY must be positive."""
         config = Config()
-        assert config.MAX_HISTORY > 0, (
-            f"MAX_HISTORY={config.MAX_HISTORY} should be positive"
-        )
+        assert config.MAX_HISTORY > 0, f"MAX_HISTORY={config.MAX_HISTORY} should be positive"
 
     def test_config_has_embedding_model(self):
         """EMBEDDING_MODEL should be set."""
@@ -74,16 +73,16 @@ class TestConfig:
         """Logging configuration should be properly initialized."""
         config = Config()
         assert config.logging is not None
-        assert hasattr(config.logging, 'level')
-        assert hasattr(config.logging, 'format')
+        assert hasattr(config.logging, "level")
+        assert hasattr(config.logging, "format")
 
     def test_config_logging_level_valid(self):
         """Logging level should be a valid Python logging level."""
         config = Config()
-        valid_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
-        assert config.logging.level in valid_levels, (
-            f"LOG_LEVEL={config.logging.level} is not a valid logging level"
-        )
+        valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        assert (
+            config.logging.level in valid_levels
+        ), f"LOG_LEVEL={config.logging.level} is not a valid logging level"
 
     def test_config_defaults(self):
         """Test that default configuration values are set correctly."""

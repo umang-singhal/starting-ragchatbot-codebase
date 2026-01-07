@@ -1,6 +1,7 @@
 """
 Shared fixtures for RAG system tests.
 """
+
 import sys
 import os
 from pathlib import Path
@@ -26,7 +27,7 @@ def sample_course():
         lessons=[
             Lesson(lesson_number=1, title="Introduction", lesson_link="https://example.com/l1"),
             Lesson(lesson_number=2, title="Linear Regression"),
-        ]
+        ],
     )
 
 
@@ -38,20 +39,20 @@ def sample_chunks():
             content="Machine learning is a subset of artificial intelligence that focuses on algorithms.",
             course_title="Machine Learning Basics",
             lesson_number=1,
-            chunk_index=0
+            chunk_index=0,
         ),
         CourseChunk(
             content="Linear regression models the relationship between variables using a linear approach.",
             course_title="Machine Learning Basics",
             lesson_number=2,
-            chunk_index=1
+            chunk_index=1,
         ),
         CourseChunk(
             content="Neural networks are computing systems inspired by biological neural networks.",
             course_title="Deep Learning Advanced",
             lesson_number=1,
-            chunk_index=0
-        )
+            chunk_index=0,
+        ),
     ]
 
 
@@ -80,13 +81,13 @@ def mock_vector_store():
         return SearchResults(
             documents=[
                 "Machine learning is a subset of artificial intelligence.",
-                "Linear regression models relationships between variables."
+                "Linear regression models relationships between variables.",
             ][:result_count],
             metadata=[
                 {"course_title": "Machine Learning Basics", "lesson_number": 1, "chunk_index": 0},
-                {"course_title": "Machine Learning Basics", "lesson_number": 1, "chunk_index": 1}
+                {"course_title": "Machine Learning Basics", "lesson_number": 1, "chunk_index": 1},
             ][:result_count],
-            distances=[0.1, 0.2][:result_count]
+            distances=[0.1, 0.2][:result_count],
         )
 
     store.search.side_effect = mock_search
@@ -110,13 +111,13 @@ def mock_vector_store_fixed():
         return SearchResults(
             documents=[
                 "Machine learning is a subset of artificial intelligence.",
-                "Linear regression models relationships between variables."
+                "Linear regression models relationships between variables.",
             ][:result_count],
             metadata=[
                 {"course_title": "Machine Learning Basics", "lesson_number": 1, "chunk_index": 0},
-                {"course_title": "Machine Learning Basics", "lesson_number": 1, "chunk_index": 1}
+                {"course_title": "Machine Learning Basics", "lesson_number": 1, "chunk_index": 1},
             ][:result_count],
-            distances=[0.1, 0.2][:result_count]
+            distances=[0.1, 0.2][:result_count],
         )
 
     store.search.side_effect = mock_search
